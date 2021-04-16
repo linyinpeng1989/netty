@@ -106,6 +106,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * {@link Channel} implementation has no no-args constructor.
      */
     public B channel(Class<? extends C> channelClass) {
+        // 当调用 ServerBootstrap.channel() 方法设置服务端处理 Channel 类型时，创建该 Channel 类型的 ReflectiveChannelFactory 工厂类
         return channelFactory(new ReflectiveChannelFactory<C>(
                 ObjectUtil.checkNotNull(channelClass, "channelClass")
         ));
@@ -269,6 +270,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
+        // 初始化 Channel 对象及预设参数，并注册到 Selector 中
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
@@ -278,6 +280,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
+            // 进行端口绑定
             doBind0(regFuture, channel, localAddress, promise);
             return promise;
         } else {
@@ -307,7 +310,9 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+            // ChannelFactory.newChannel() 创建服务端 Channel 对象
             channel = channelFactory.newChannel();
+            // init() 初始化预设参数
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -319,7 +324,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
-
+        // register() 将 channel 注册到 Selector 中
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {

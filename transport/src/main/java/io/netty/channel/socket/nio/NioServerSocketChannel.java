@@ -70,6 +70,10 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance
+     *
+     * 创建 NioServerSocketChannel 实例，该实例持有 ServerSocketChannel 实例的引用
+     *
+     * PS：newSocket(DEFAULT_SELECTOR_PROVIDER) 创建 ServerSocketChannel 实例
      */
     public NioServerSocketChannel() {
         this(newSocket(DEFAULT_SELECTOR_PROVIDER));

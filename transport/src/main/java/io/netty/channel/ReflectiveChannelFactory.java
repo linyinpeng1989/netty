@@ -28,6 +28,11 @@ public class ReflectiveChannelFactory<T extends Channel> implements ChannelFacto
 
     private final Constructor<? extends T> constructor;
 
+    /**
+     * 创建相应 Channel 的工厂实例，从而通过反射创建相应 Channel 的实例
+     *
+     * @param clazz
+     */
     public ReflectiveChannelFactory(Class<? extends T> clazz) {
         ObjectUtil.checkNotNull(clazz, "clazz");
         try {
@@ -41,6 +46,7 @@ public class ReflectiveChannelFactory<T extends Channel> implements ChannelFacto
     @Override
     public T newChannel() {
         try {
+            // 通过反射创建服务端 Channel 对象
             return constructor.newInstance();
         } catch (Throwable t) {
             throw new ChannelException("Unable to create Channel from class " + constructor.getDeclaringClass(), t);

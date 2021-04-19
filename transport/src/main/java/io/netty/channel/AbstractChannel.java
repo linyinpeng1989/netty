@@ -559,6 +559,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
             boolean wasActive = isActive();
             try {
+                // 绑定IP地址即端口信息
                 doBind(localAddress);
             } catch (Throwable t) {
                 safeSetFailure(promise, t);
@@ -567,6 +568,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             if (!wasActive && isActive()) {
+                // 触发连接激活事件，即 Selector 可以开始轮询了
                 invokeLater(new Runnable() {
                     @Override
                     public void run() {

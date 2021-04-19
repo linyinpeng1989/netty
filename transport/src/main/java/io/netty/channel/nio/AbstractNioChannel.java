@@ -50,6 +50,10 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(AbstractNioChannel.class);
 
+    /**
+     * NioServerSocketChannel 或 NioSocketChannel 是 Netty 中的扩展实现，
+     * 分别持有 ServerSocketChannel 或 SocketChannel 实例的引用（即 SelectableChannel ch），从而完成对 Java NIO 的封装。
+     */
     private final SelectableChannel ch;
     protected final int readInterestOp;
     volatile SelectionKey selectionKey;
@@ -378,6 +382,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         boolean selected = false;
         for (;;) {
             try {
+                // 将 ServerSocketChannel 或 SocketChannel 注册到 Selector 中
                 selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);
                 return;
             } catch (CancelledKeyException e) {

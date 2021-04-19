@@ -227,6 +227,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private void invokeChannelActive() {
         if (invokeHandler()) {
             try {
+                // 从 HeadContext.channelActive 开始执行
                 ((ChannelInboundHandler) handler()).channelActive(this);
             } catch (Throwable t) {
                 invokeExceptionCaught(t);
@@ -503,6 +504,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private void invokeBind(SocketAddress localAddress, ChannelPromise promise) {
         if (invokeHandler()) {
             try {
+                // 执行 HeadContext.bind 方法
                 ((ChannelOutboundHandler) handler()).bind(this, localAddress, promise);
             } catch (Throwable t) {
                 notifyOutboundHandlerException(t, promise);
@@ -886,6 +888,8 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         AbstractChannelHandlerContext ctx = this;
         EventExecutor currentExecutor = executor();
         do {
+            // 获取前一个 AbstractChannelHandlerContext，此处 this 为 DefaultChannelPipeline.tail，
+            // 因此 ctx.prev 指向 DefaultChannelPipeline.head，即 HeadContext
             ctx = ctx.prev;
         } while (skipContext(ctx, currentExecutor, mask, MASK_ONLY_OUTBOUND));
         return ctx;

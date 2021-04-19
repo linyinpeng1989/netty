@@ -90,7 +90,9 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
      * Create a new instance using the given {@link ServerSocketChannel}.
      */
     public NioServerSocketChannel(ServerSocketChannel channel) {
+        // 初始化 NioServerSocketChannel 实例，并设置相关属性
         super(null, channel, SelectionKey.OP_ACCEPT);
+        // 初始化 ServerSocketChannelConfig 实例
         config = new NioServerSocketChannelConfig(this, javaChannel().socket());
     }
 
@@ -135,6 +137,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
     @Override
     protected void doBind(SocketAddress localAddress) throws Exception {
         if (PlatformDependent.javaVersion() >= 7) {
+            // 获取 ServerSocketChannel 实例，并调用 ServerSocketChannel.bind 绑定地址及端口
             javaChannel().bind(localAddress, config.getBacklog());
         } else {
             javaChannel().socket().bind(localAddress, config.getBacklog());

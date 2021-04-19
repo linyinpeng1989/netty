@@ -71,9 +71,9 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
     /**
      * Create a new instance
      *
-     * 创建 NioServerSocketChannel 实例，该实例持有 ServerSocketChannel 实例的引用
+     * 创建 {@link ServerSocketChannel} 实例并持有该实例
      *
-     * PS：newSocket(DEFAULT_SELECTOR_PROVIDER) 创建 ServerSocketChannel 实例
+     * PS：newSocket(DEFAULT_SELECTOR_PROVIDER) 创建JDK的 {@link ServerSocketChannel} 实例
      */
     public NioServerSocketChannel() {
         this(newSocket(DEFAULT_SELECTOR_PROVIDER));
@@ -90,7 +90,13 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
      * Create a new instance using the given {@link ServerSocketChannel}.
      */
     public NioServerSocketChannel(ServerSocketChannel channel) {
-        // 初始化 NioServerSocketChannel 实例，并设置相关属性
+        /**
+         * 创建 {@link NioServerSocketChannel} 实例并设置相关属性，如
+         * {@link ServerSocketChannel}、非阻塞模式、
+         * {@link io.netty.channel.Channel.Unsafe}、
+         * {@link io.netty.channel.ChannelId}、
+         * {@link io.netty.channel.DefaultChannelPipeline}
+         */
         super(null, channel, SelectionKey.OP_ACCEPT);
         // 初始化 ServerSocketChannelConfig 实例
         config = new NioServerSocketChannelConfig(this, javaChannel().socket());
@@ -137,7 +143,9 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
     @Override
     protected void doBind(SocketAddress localAddress) throws Exception {
         if (PlatformDependent.javaVersion() >= 7) {
-            // 获取 ServerSocketChannel 实例，并调用 ServerSocketChannel.bind 绑定地址及端口
+            /**
+             * 获取 {@link ServerSocketChannel} 实例，并调用 {@link ServerSocketChannel#bind(SocketAddress)} 绑定地址及端口
+             */
             javaChannel().bind(localAddress, config.getBacklog());
         } else {
             javaChannel().socket().bind(localAddress, config.getBacklog());

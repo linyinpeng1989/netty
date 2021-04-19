@@ -76,11 +76,21 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
 
+        /**
+         * 初始化线程池，{@link EventExecutor} 是 {@link Executor} 的一个实现
+         */
         children = new EventExecutor[nThreads];
 
         for (int i = 0; i < nThreads; i ++) {
             boolean success = false;
             try {
+                /**
+                 * 实例化线程池中的执行线程，最终由 NioEventLoopGroup 创建 NioEventLoop 实例
+                 *
+                 * {@link MultithreadEventExecutorGroup}
+                 * {@link MultithreadEventLoopGroup}
+                 * {@link NioEventLoopGroup}
+                 */
                 children[i] = newChild(executor, args);
                 success = true;
             } catch (Exception e) {
@@ -108,6 +118,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             }
         }
 
+        // 初始化线程池的线程分配策略
         chooser = chooserFactory.newChooser(children);
 
         final FutureListener<Object> terminationListener = new FutureListener<Object>() {

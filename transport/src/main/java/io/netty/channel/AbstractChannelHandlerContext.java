@@ -486,6 +486,9 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             return promise;
         }
 
+        /**
+         * 实际上 next 指向 {@link DefaultChannelPipeline.HeadContext} 实例
+         */
         final AbstractChannelHandlerContext next = findContextOutbound(MASK_BIND);
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
@@ -504,7 +507,9 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private void invokeBind(SocketAddress localAddress, ChannelPromise promise) {
         if (invokeHandler()) {
             try {
-                // 执行 HeadContext.bind 方法
+                /**
+                 * 执行 {@link io.netty.channel.DefaultChannelPipeline.HeadContext#bind(ChannelHandlerContext, SocketAddress, ChannelPromise)} 方法
+                 */
                 ((ChannelOutboundHandler) handler()).bind(this, localAddress, promise);
             } catch (Throwable t) {
                 notifyOutboundHandlerException(t, promise);
@@ -888,8 +893,12 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         AbstractChannelHandlerContext ctx = this;
         EventExecutor currentExecutor = executor();
         do {
-            // 获取前一个 AbstractChannelHandlerContext，此处 this 为 DefaultChannelPipeline.tail，
-            // 因此 ctx.prev 指向 DefaultChannelPipeline.head，即 HeadContext
+            /**
+             * 获取前一个 {@link AbstractChannelHandlerContext} 实例，此处 this 指向{@link DefaultChannelPipeline#tail}，
+             * 即{@link io.netty.channel.DefaultChannelPipeline.TailContext}
+             * 因此 ctx.prev 指向 {@link DefaultChannelPipeline#head}，
+             * 即 {@link io.netty.channel.DefaultChannelPipeline.HeadContext}
+             */
             ctx = ctx.prev;
         } while (skipContext(ctx, currentExecutor, mask, MASK_ONLY_OUTBOUND));
         return ctx;

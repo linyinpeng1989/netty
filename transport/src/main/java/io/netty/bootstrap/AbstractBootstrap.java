@@ -280,7 +280,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
-            // 进行端口绑定
+            // 端口绑定
             doBind0(regFuture, channel, localAddress, promise);
             return promise;
         } else {
@@ -310,7 +310,13 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
-            // ChannelFactory.newChannel() 创建服务端 Channel 对象
+            /**
+             * 创建服务端 Channel 对象，channelFactory 实例由 {@link ServerBootstrap#channel(Class)} 方法中创建并赋值
+             *
+             * @see io.netty.channel.socket.nio.NioServerSocketChannel
+             * @see io.netty.channel.socket.nio.NioSocketChannel
+             * @see ReflectiveChannelFactory
+             */
             channel = channelFactory.newChannel();
             // init() 初始化预设参数
             init(channel);
@@ -324,7 +330,11 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
-        // register() 将 channel 注册到 Selector 中
+
+        /**
+         * {@link io.netty.channel.MultithreadEventLoopGroup#register(Channel)} 将 channel 注册到 Selector 中
+         * {@link io.netty.channel.MultithreadEventLoopGroup} 是 {@link io.netty.channel.nio.NioEventLoopGroup} 的父类
+         */
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {

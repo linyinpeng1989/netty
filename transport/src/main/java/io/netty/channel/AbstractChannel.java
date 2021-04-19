@@ -16,6 +16,7 @@
 package io.netty.channel;
 
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.nio.AbstractNioChannel;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.channel.socket.ChannelOutputShutdownException;
 import io.netty.util.DefaultAttributeMap;
@@ -477,6 +478,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             AbstractChannel.this.eventLoop = eventLoop;
 
             if (eventLoop.inEventLoop()) {
+                // 将 Channle 注册到 Selector 中
                 register0(promise);
             } else {
                 try {
@@ -505,6 +507,11 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                     return;
                 }
                 boolean firstRegistration = neverRegistered;
+                /**
+                 * 将相关 Channel 注册到 Selector 中
+                 *
+                 * {@link AbstractNioChannel#doRegister()}
+                 */
                 doRegister();
                 neverRegistered = false;
                 registered = true;
@@ -559,7 +566,12 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
             boolean wasActive = isActive();
             try {
-                // 绑定IP地址即端口信息
+                /**
+                 * 绑定IP地址及端口信息
+                 *
+                 * {@link io.netty.channel.socket.nio.NioServerSocketChannel#doBind(SocketAddress)}
+                 * {@link io.netty.channel.socket.nio.NioSocketChannel#doBind(SocketAddress)}
+                 */
                 doBind(localAddress);
             } catch (Throwable t) {
                 safeSetFailure(promise, t);

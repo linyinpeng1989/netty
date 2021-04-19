@@ -83,6 +83,13 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
 
     @Override
     public ChannelFuture register(Channel channel) {
+        /**
+         * 通过线程池分配策略，获取一个可用的 {@link io.netty.util.concurrent.EventExecutor} 子类 {@link io.netty.channel.nio.NioEventLoop}
+         * 的实例，并执行注册操作。
+         *
+         * {@link MultithreadEventExecutorGroup#next()}
+         * {@link MultithreadEventExecutorGroup#chooser}
+         */
         return next().register(channel);
     }
 

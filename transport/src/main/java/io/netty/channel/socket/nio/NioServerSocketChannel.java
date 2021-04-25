@@ -58,6 +58,8 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
              *  {@link SelectorProvider#provider()} which is called by each ServerSocketChannel.open() otherwise.
              *
              *  See <a href="https://github.com/netty/netty/issues/2308">#2308</a>.
+             *
+             *  通过 {@link SelectorProvider#openServerSocketChannel()} 方法创建 JDK 的 {@link NioServerSocketChannel} 实例
              */
             return provider.openServerSocketChannel();
         } catch (IOException e) {
@@ -159,6 +161,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     @Override
     protected int doReadMessages(List<Object> buf) throws Exception {
+        // JDK 底层 NIO API 接收客户端请求，并将 JDK 底层的 SocketChannel 包装成 NioSocketChannel 对象
         SocketChannel ch = SocketUtils.accept(javaChannel());
 
         try {

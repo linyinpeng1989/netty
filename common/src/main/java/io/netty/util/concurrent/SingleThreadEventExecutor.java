@@ -76,6 +76,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private final Queue<Runnable> taskQueue;
 
+    /**
+     * 每个 EventLoop 都会占用一个线程，用于处理该 EventLoop 上面发生的所有 IO 操作和事件
+     */
     private volatile Thread thread;
     @SuppressWarnings("unused")
     private volatile ThreadProperties threadProperties;
@@ -824,8 +827,17 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     private void execute(Runnable task, boolean immediate) {
+        /**
+         * 判断线程是否 Netty 自己创建（将当前线程与 NioEventLoop 中持有的线程是否一致）
+         *
+         * 若当前线程就是 Netty 自己创建的线程，则将 task 添加到任务队列中，由 bossGroup 线程池进行调度执行。
+         *
+         * bossGroup 线程池中实际执行任务的线程，即 {@link NioEventLoop} 线程，具体逻辑参见 {@link NioEventLoop#run()}
+         */
         boolean inEventLoop = inEventLoop();
         addTask(task);
+
+        // 如果不是 Netty 自己创建的线程时
         if (!inEventLoop) {
             startThread();
             if (isShutdown()) {
@@ -986,6 +998,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                    /**
+                     * 运行 SingleThreadEventExecutor，执行 {@link NioEventLoop#run()}
+                     */
                     SingleThreadEventExecutor.this.run();
                     success = true;
                 } catch (Throwable t) {

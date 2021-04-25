@@ -988,6 +988,8 @@ public final class PlatformDependent {
      * Create a new {@link Queue} which is safe to use for multiple producers (different threads) and a single
      * consumer (one thread!).
      * @return A MPSC queue which may be unbounded.
+     *
+     * 创建一个队列：多个线程写入，单个线程消费（{@link NioEventLoop#thread}）
      */
     public static <T> Queue<T> newMpscQueue() {
         return Mpsc.newMpscQueue();

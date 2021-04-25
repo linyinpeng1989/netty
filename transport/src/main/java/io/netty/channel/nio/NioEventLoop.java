@@ -15,15 +15,10 @@
  */
 package io.netty.channel.nio;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelException;
-import io.netty.channel.EventLoop;
-import io.netty.channel.EventLoopException;
-import io.netty.channel.EventLoopTaskQueueFactory;
-import io.netty.channel.SelectStrategy;
-import io.netty.channel.SingleThreadEventLoop;
+import io.netty.channel.*;
 import io.netty.util.IntSupplier;
 import io.netty.util.concurrent.RejectedExecutionHandler;
+import io.netty.util.concurrent.SingleThreadEventExecutor;
 import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.ReflectionUtil;
@@ -35,17 +30,12 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.Selector;
 import java.nio.channels.SelectionKey;
-
+import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -53,6 +43,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * {@link SingleThreadEventLoop} implementation which register the {@link Channel}'s to a
  * {@link Selector} and so does the multi-plexing of these in the event loop.
  *
+ * NioEventLoop 肩负着两种任务，由 {@link NioEventLoop#thread} 进行处理。第一个任务是作为 IO 线程, 执行与 Channel 相关的 IO 操作，
+ * 包括调用 select 等待就绪的 IO 事件、读写数据与数据的处理等；而第二个任务是作为任务队列，
+ * 执行 {@link SingleThreadEventExecutor#taskQueue} 中的任务，例如用户调用 eventLoop.schedule 提交的定时任务也是这个线程执行的。
+ *
+ * 在 Netty 中，每个 Channel 都有且仅有一个 EventLoop 与之关联，但每个 EventLoop 可以关联多个 Channel。
+ * 即 EventLoop 与 Channel 是 “一对多” 的关系。
  */
 public final class NioEventLoop extends SingleThreadEventLoop {
 
@@ -110,6 +106,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     /**
      * The NIO {@link Selector}.
+     *
+     * 每个 EventLoop 中均会持有一个 Selector 实例，用于处理 EventLoop 关联的 N 个 Channel 上所有的事件
      */
     private Selector selector;
     private Selector unwrappedSelector;
@@ -434,6 +432,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     @Override
     protected void run() {
         int selectCnt = 0;
+
+        /**
+         * Selector 轮询
+         */
         for (;;) {
             try {
                 int strategy;
@@ -552,6 +554,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             }
             return true;
         }
+
+        /**
+         * Netty 针对 JDK 空轮询 BUG 的优化：
+         */
         if (SELECTOR_AUTO_REBUILD_THRESHOLD > 0 &&
                 selectCnt >= SELECTOR_AUTO_REBUILD_THRESHOLD) {
             // The selector returned prematurely many times in a row.

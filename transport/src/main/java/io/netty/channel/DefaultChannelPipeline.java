@@ -101,6 +101,12 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         succeededFuture = new SucceededChannelFuture(channel, null);
         voidPromise =  new VoidChannelPromise(channel, true);
 
+        /**
+         * 设置双向链表的头节点和尾结点
+         *
+         * {@link TailContext} 实现了 {@link ChannelInboundHandler} 接口
+         * {@link HeadContext} 实现了 {@link ChannelInboundHandler}、{@link ChannelOutboundHandler} 接口
+         */
         tail = new TailContext(this);
         head = new HeadContext(this);
 
@@ -819,6 +825,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     @Override
     public final ChannelPipeline fireChannelRegistered() {
+        /**
+         * 从 {@link HeadContext} 开始执行
+         */
         AbstractChannelHandlerContext.invokeChannelRegistered(head);
         return this;
     }
@@ -1387,6 +1396,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) {
             invokeHandlerAddedIfNeeded();
+            /**
+             * 往后传播进行注册 {@link AbstractChannelHandlerContext#fireChannelRegistered()}
+             */
             ctx.fireChannelRegistered();
         }
 

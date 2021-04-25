@@ -15,18 +15,9 @@
  */
 package io.netty.bootstrap;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelConfig;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.ServerChannel;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoop;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.logging.InternalLogger;
@@ -142,7 +133,8 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         final Entry<AttributeKey<?>, Object>[] currentChildAttrs = newAttributesArray(childAttrs);
 
         /**
-         * 向 {@link io.netty.channel.DefaultChannelPipeline} 中添加 {@link ChannelInitializer}，并添加相关 Handler
+         * 向 {@link io.netty.channel.DefaultChannelPipeline} 中添加 {@link ChannelInitializer}，
+         * 并通过 {@link ChannelInitializer} 添加相关 Handler 及自定义 Handler
          */
         p.addLast(new ChannelInitializer<Channel>() {
             @Override
@@ -156,7 +148,11 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                 ch.eventLoop().execute(new Runnable() {
                     @Override
                     public void run() {
-                        // 添加连接器 ServerBootstrapAcceptor，并设置childHandler、 ChildOptions 和 ChildAttrs
+                        /**
+                         * 添加连接器 ServerBootstrapAcceptor，并设置childHandler、 ChildOptions 和 ChildAttrs
+                         * 
+                         * 当客户端请求连接时，会执行 {@link ServerBootstrapAcceptor#channelRead(ChannelHandlerContext, Object)}
+                         */
                         pipeline.addLast(new ServerBootstrapAcceptor(
                                 ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
                     }
@@ -178,6 +174,9 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         return this;
     }
 
+    /**
+     * 服务端处理客户端请求的 Handler
+     */
     private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapter {
 
         private final EventLoopGroup childGroup;
@@ -218,6 +217,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             setAttributes(child, childAttrs);
 
             try {
+                /**
+                 * 从 workGroup（即 childGroup） 中获取一个 {@link NioEventLoop} 实例，
+                 * 并将客户端请求 {@link NioSocketChannel} 注册到 {@link NioEventLoop} 实例对应的 Selector 中
+                 */
                 childGroup.register(child).addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {

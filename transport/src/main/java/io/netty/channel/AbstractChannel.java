@@ -16,9 +16,14 @@
 package io.netty.channel;
 
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.nio.AbstractNioByteChannel;
 import io.netty.channel.nio.AbstractNioChannel;
+import io.netty.channel.nio.AbstractNioMessageChannel;
+import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.channel.socket.ChannelOutputShutdownException;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.DefaultAttributeMap;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.ObjectUtil;
@@ -28,11 +33,7 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.net.NoRouteToHostException;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.Executor;
@@ -48,12 +49,20 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     private final Channel parent;
     private final ChannelId id;
     private final Unsafe unsafe;
+
+    /**
+     * 每个 Channel 中都会关联一个 ChannelPipeline（链式 Handler）
+     */
     private final DefaultChannelPipeline pipeline;
     private final VoidChannelPromise unsafeVoidPromise = new VoidChannelPromise(this, false);
     private final CloseFuture closeFuture = new CloseFuture(this);
 
     private volatile SocketAddress localAddress;
     private volatile SocketAddress remoteAddress;
+
+    /**
+     * 每个 Channel 中都会关联一个 EventLoop（EventLoop 中持有一个 thread）
+     */
     private volatile EventLoop eventLoop;
     private volatile boolean registered;
     private boolean closeInitiated;
@@ -72,6 +81,19 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     protected AbstractChannel(Channel parent) {
         this.parent = parent;
         id = newId();
+        /**
+         * 服务端相关类：
+         *      {@link NioServerSocketChannel}
+         *      {@link AbstractNioMessageChannel}
+         *      {@link AbstractNioMessageChannel#newUnsafe()}
+         *      {@link AbstractNioMessageChannel.NioMessageUnsafe}
+         *
+         * 客户端相关类：
+         *      {@link NioSocketChannel}
+         *      {@link NioSocketChannel#newUnsafe()}
+         *      {@link NioSocketChannel.NioSocketChannelUnsafe}
+         *      {@link AbstractNioByteChannel.NioByteUnsafe}
+         */
         unsafe = newUnsafe();
         pipeline = newChannelPipeline();
     }
@@ -475,10 +497,15 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            // 将 EventLoop 与 Channel 关联（一对多关系，即每个 EventLoop 可以关联多个 Channel，但是每个 Channel
+            // 都有且仅有一个 EventLoop 与之关联）
             AbstractChannel.this.eventLoop = eventLoop;
 
+            // 判断当前线程是否与 EventLoop 对应的线程一致
             if (eventLoop.inEventLoop()) {
-                // 将 Channle 注册到 Selector 中
+                /**
+                 * 将 Channel 注册到 {@link NioEventLoop} 中对应的 Selector 中
+                 */
                 register0(promise);
             } else {
                 try {
@@ -521,6 +548,10 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 pipeline.invokeHandlerAddedIfNeeded();
 
                 safeSetSuccess(promise);
+
+                /**
+                 * 触发 {@link DefaultChannelPipeline#fireChannelRegistered()} 注册自定义的 Handler
+                 */
                 pipeline.fireChannelRegistered();
                 // Only fire a channelActive if the channel has never been registered. This prevents firing
                 // multiple channel actives if the channel is deregistered and re-registered.

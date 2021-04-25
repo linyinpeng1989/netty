@@ -15,8 +15,10 @@
  */
 package io.netty.channel;
 
+import io.netty.channel.nio.NioEventLoop;
 import io.netty.util.NettyRuntime;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorChooserFactory;
 import io.netty.util.concurrent.MultithreadEventExecutorGroup;
 import io.netty.util.internal.SystemPropertyUtil;
@@ -49,6 +51,9 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
      * @see MultithreadEventExecutorGroup#MultithreadEventExecutorGroup(int, Executor, Object...)
      */
     protected MultithreadEventLoopGroup(int nThreads, Executor executor, Object... args) {
+        /**
+         * nThreads 为 0 时，线程池大小为 CPU 核心数的 2 倍
+         */
         super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, executor, args);
     }
 
@@ -84,11 +89,13 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
     @Override
     public ChannelFuture register(Channel channel) {
         /**
-         * 通过线程池分配策略，获取一个可用的 {@link io.netty.util.concurrent.EventExecutor} 子类 {@link io.netty.channel.nio.NioEventLoop}
+         * 通过线程池分配策略，获取一个可用的 {@link EventExecutor} 子类 {@link NioEventLoop}
          * 的实例，并执行注册操作。
          *
          * {@link MultithreadEventExecutorGroup#next()}
          * {@link MultithreadEventExecutorGroup#chooser}
+         * @see io.netty.util.concurrent.DefaultEventExecutorChooserFactory.PowerOfTwoEventExecutorChooser
+         * @see io.netty.util.concurrent.DefaultEventExecutorChooserFactory.GenericEventExecutorChooser
          */
         return next().register(channel);
     }

@@ -88,6 +88,10 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private final DefaultChannelPipeline pipeline;
     private final String name;
     private final boolean ordered;
+
+    /**
+     * 是否忽略该 ChannelHandler 的执行
+     */
     private final int executionMask;
 
     // Will be set to null if no child executor should be used, otherwise it will be set to the
@@ -106,6 +110,11 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         this.name = ObjectUtil.checkNotNull(name, "name");
         this.pipeline = pipeline;
         this.executor = executor;
+
+        /**
+         * 根据 Handler 的类型：{@link ChannelInboundHandler} 或 {@link ChannelOutboundHandler} 计算对应的 mask，
+         * 在 pipeline 执行时判断是否需要进行忽略
+         */
         this.executionMask = mask(handlerClass);
         // Its ordered if its driven by the EventLoop or the given Executor is an instanceof OrderedEventExecutor.
         ordered = executor == null || executor instanceof OrderedEventExecutor;
@@ -142,6 +151,9 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
 
     @Override
     public ChannelHandlerContext fireChannelRegistered() {
+        /**
+         * findContextInbound(MASK_CHANNEL_REGISTERED) 用于查找 {@link ChannelInitializer}
+         */
         invokeChannelRegistered(findContextInbound(MASK_CHANNEL_REGISTERED));
         return this;
     }
@@ -904,6 +916,15 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return ctx;
     }
 
+    /**
+     * 判断是否需要跳过相应的 ChannelHandler
+     *
+     * @param ctx
+     * @param currentExecutor
+     * @param mask
+     * @param onlyMask
+     * @return
+     */
     private static boolean skipContext(
             AbstractChannelHandlerContext ctx, EventExecutor currentExecutor, int mask, int onlyMask) {
         // Ensure we correctly handle MASK_EXCEPTION_CAUGHT which is not included in the MASK_EXCEPTION_CAUGHT

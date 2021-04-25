@@ -32,6 +32,12 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
     @Override
     public EventExecutorChooser newChooser(EventExecutor[] executors) {
+        /**
+         * 根据线程池大小是否为 2 的幂次方，选用不同的线程获取策略
+         *
+         * 位移运算：{@link PowerOfTwoEventExecutorChooser}
+         * 取模运算：{@link GenericEventExecutorChooser}
+         */
         if (isPowerOfTwo(executors.length)) {
             return new PowerOfTwoEventExecutorChooser(executors);
         } else {

@@ -53,7 +53,7 @@ public class ReflectiveChannelFactory<T extends Channel> implements ChannelFacto
     public T newChannel() {
         try {
             /**
-             * 通过反射创建服务端 Channel 对象，constructor 为相应 Channel 的默认构造函数，
+             * 通过反射创建相关 Channel 对象，constructor 为相应 Channel 的默认构造函数，
              * 在 {@link ReflectiveChannelFactory} 构造函数中初始化
              *
              * @see io.netty.channel.socket.nio.NioServerSocketChannel

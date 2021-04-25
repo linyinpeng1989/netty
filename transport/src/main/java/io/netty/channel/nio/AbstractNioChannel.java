@@ -85,7 +85,9 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         this.ch = ch;
         this.readInterestOp = readInterestOp;
         try {
-            // 设置 JDK 的 ServerSocketChannel 实例为非阻塞模型
+            /**
+             * 设置 JDK 的 {@link java.nio.channels.ServerSocketChannel} 或 {@link java.nio.channels.SocketChannel} 实例为非阻塞模型
+             */
             ch.configureBlocking(false);
         } catch (IOException e) {
             try {
@@ -383,7 +385,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         for (;;) {
             try {
                 /**
-                 * 将相关 JDK的 Channel 实例注册到 Selector 中，事件为空，并且将
+                 * 将相关 JDK的 Channel 实例注册到 Selector 中，事件为空（表示 Netty 服务就绪），并且将
                  * {@link io.netty.channel.socket.nio.NioServerSocketChannel} 或 {@link io.netty.channel.socket.nio.NioSocketChannel}
                  * 作为 attr 属性添加到 JDK 的 Channel 实例中，建立一对一的映射关系
                  *

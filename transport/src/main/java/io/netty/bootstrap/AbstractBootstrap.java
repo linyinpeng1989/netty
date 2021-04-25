@@ -106,7 +106,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * {@link Channel} implementation has no no-args constructor.
      */
     public B channel(Class<? extends C> channelClass) {
-        // 当调用 ServerBootstrap.channel() 方法设置服务端处理 Channel 类型时，创建该 Channel 类型的 ReflectiveChannelFactory 工厂类
+        // 当调用 ServerBootstrap.channel() 或 Bootstrap.channel() 方法设置服务端处理 Channel 类型时，
+        // 创建该 Channel 类型的 ReflectiveChannelFactory 工厂类
         return channelFactory(new ReflectiveChannelFactory<C>(
                 ObjectUtil.checkNotNull(channelClass, "channelClass")
         ));
@@ -311,7 +312,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         Channel channel = null;
         try {
             /**
-             * 创建服务端 Channel 对象，channelFactory 实例由 {@link ServerBootstrap#channel(Class)} 方法中创建并赋值
+             * 创建相关 Channel 对象，channelFactory 实例由 {@link ServerBootstrap#channel(Class)}
+             * 或 {@link Bootstrap#channel(Class)}方法中创建并赋值
              *
              * @see io.netty.channel.socket.nio.NioServerSocketChannel
              * @see io.netty.channel.socket.nio.NioSocketChannel
@@ -364,6 +366,9 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
         // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
         // the pipeline in its channelRegistered() implementation.
+        /**
+         * 服务端 Selector 轮询入口：{@link io.netty.util.concurrent.SingleThreadEventExecutor#execute(Runnable, boolean)}
+         */
         channel.eventLoop().execute(new Runnable() {
             @Override
             public void run() {

@@ -137,7 +137,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
                 /**
                  * 调用 {@link ChannelInitializer#initChannel(ChannelHandlerContext)} 添加自定义的 Handler
                  *
-                 * PS：一般是创建 ChannelInitializer 实例时覆盖 initChannel 方法
+                 * PS：一般是创建 ChannelInitializer 实例时实现 initChannel 抽象方法
                  */
                 initChannel((C) ctx.channel());
             } catch (Throwable cause) {

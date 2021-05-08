@@ -59,6 +59,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
         @Override
         public EventExecutor next() {
+            // executors 总数必须是 2 的幂次方（2，4,8...等）才会用位移运算，效率更高
             return executors[idx.getAndIncrement() & executors.length - 1];
         }
     }
@@ -76,6 +77,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
         @Override
         public EventExecutor next() {
+            // 递增、取模、取正值（不然可能是负数）
             return executors[(int) Math.abs(idx.getAndIncrement() % executors.length)];
         }
     }

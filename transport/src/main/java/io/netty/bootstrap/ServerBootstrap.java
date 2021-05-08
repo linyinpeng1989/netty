@@ -206,9 +206,18 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             };
         }
 
+        /**
+         * {@link ServerBootstrapAcceptor} 对应的读事件方法
+         *
+         * @param ctx
+         * @param msg 相当于 ServerSocketChannel 接收到客户端请求后，创建的服务端 SocketChannel 对象
+         */
         @Override
         @SuppressWarnings("unchecked")
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            /**
+             * 相当于 ServerSocketChannel 接收到客户端请求后，创建的服务端 SocketChannel 对象
+             */
             final Channel child = (Channel) msg;
 
             child.pipeline().addLast(childHandler);
@@ -218,8 +227,9 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
             try {
                 /**
-                 * 从 workGroup（即 childGroup） 中获取一个 {@link NioEventLoop} 实例，
-                 * 并将客户端请求 {@link NioSocketChannel} 注册到 {@link NioEventLoop} 实例对应的 Selector 中
+                 * 从 workerGroup（即 childGroup） 中获取一个 {@link NioEventLoop} 实例，
+                 * 并将客户端请求对应的服务端 SocketChannel 对象 {@link NioSocketChannel}
+                 * 注册到 {@link NioEventLoop} 实例对应的 Selector 中
                  */
                 childGroup.register(child).addListener(new ChannelFutureListener() {
                     @Override

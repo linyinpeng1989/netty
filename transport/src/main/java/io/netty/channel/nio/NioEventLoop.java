@@ -434,7 +434,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         int selectCnt = 0;
 
         /**
-         * Selector 轮询
+         * Reactor 线程模型
          */
         for (;;) {
             try {

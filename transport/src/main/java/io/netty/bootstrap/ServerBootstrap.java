@@ -149,7 +149,8 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                     @Override
                     public void run() {
                         /**
-                         * 添加连接器 ServerBootstrapAcceptor，并设置childHandler、 ChildOptions 和 ChildAttrs
+                         * 添加连接器 {@link ServerBootstrapAcceptor}，接收新请求并扔给事件循环器处理（设置底层 JDK 的 ServerSocketChannel 实例引用、
+                         * 新连接事件处理循环器以及新连接关联的 Handler、 Options、Attrs）
                          * 
                          * 当客户端请求连接时，会执行 {@link ServerBootstrapAcceptor#channelRead(ChannelHandlerContext, Object)}
                          */
@@ -227,6 +228,8 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
             try {
                 /**
+                 * 将 ServerSocketChannel 创建的 SocketChannel 绑定到 workerGroup（即 childGroup） 中
+                 *
                  * 从 workerGroup（即 childGroup） 中获取一个 {@link NioEventLoop} 实例，
                  * 并将客户端请求对应的服务端 SocketChannel 对象 {@link NioSocketChannel}
                  * 注册到 {@link NioEventLoop} 实例对应的 Selector 中

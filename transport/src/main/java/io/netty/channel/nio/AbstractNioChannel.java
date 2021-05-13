@@ -82,6 +82,9 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      */
     protected AbstractNioChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
         super(parent);
+        /**
+         * 保存底层 JDK 创建的 {@link java.nio.channels.ServerSocketChannel} 或 {@link java.nio.channels.SocketChannel} 实例
+         */
         this.ch = ch;
         this.readInterestOp = readInterestOp;
         try {

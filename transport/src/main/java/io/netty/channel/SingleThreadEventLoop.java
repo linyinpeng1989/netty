@@ -78,9 +78,7 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
 
     @Override
     public ChannelFuture register(Channel channel) {
-        /**
-         * 调用父类 {@link SingleThreadEventLoop#register(Channel)} 进行注册
-         */
+        // 进行注册
         return register(new DefaultChannelPromise(channel, this));
     }
 

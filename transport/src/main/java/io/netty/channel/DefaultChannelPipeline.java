@@ -1426,6 +1426,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            // 在 pipeline 上继续传播
             ctx.fireChannelRead(msg);
         }
 

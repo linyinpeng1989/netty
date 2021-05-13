@@ -338,8 +338,9 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
 
         /**
+         *
          * {@link io.netty.channel.MultithreadEventLoopGroup#register(Channel)} 将 channel 注册到 Selector 中
-         * {@link io.netty.channel.MultithreadEventLoopGroup} 是 {@link io.netty.channel.nio.NioEventLoopGroup} 的父类
+         * PS：{@link io.netty.channel.MultithreadEventLoopGroup} 是 {@link io.netty.channel.nio.NioEventLoopGroup} 的父类
          *
          * 服务端逻辑可以这么理解：将 ServerSocketChannel 绑定到 bossGroup（即 mainReactor） 中，
          * ServerSocketChannel 接收客户端请求并创建 SocketChannel，然后绑定到 workerGroup（即 subReactor）中。

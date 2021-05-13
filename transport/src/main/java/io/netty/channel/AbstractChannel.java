@@ -80,7 +80,12 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
      */
     protected AbstractChannel(Channel parent) {
         this.parent = parent;
+
+        /**
+         * id 是 netty 中每条 channel 的唯一标识
+         */
         id = newId();
+
         /**
          * 服务端相关类：
          *      {@link NioServerSocketChannel}
@@ -95,6 +100,10 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
          *      {@link AbstractNioByteChannel.NioByteUnsafe}
          */
         unsafe = newUnsafe();
+
+        /**
+         * 创建 {@link ChannelPipeline} 的默认实现类 {@link DefaultChannelPipeline} 的实例
+         */
         pipeline = newChannelPipeline();
     }
 

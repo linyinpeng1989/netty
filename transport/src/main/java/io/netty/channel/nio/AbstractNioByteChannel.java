@@ -17,14 +17,7 @@ package io.netty.channel.nio;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelConfig;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelMetadata;
-import io.netty.channel.ChannelOutboundBuffer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.FileRegion;
-import io.netty.channel.RecvByteBufAllocator;
+import io.netty.channel.*;
 import io.netty.channel.internal.ChannelUtils;
 import io.netty.channel.socket.ChannelInputShutdownEvent;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
@@ -139,7 +132,13 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
                 return;
             }
             final ChannelPipeline pipeline = pipeline();
+            // 内存分配器：默认采用池化的分配器
             final ByteBufAllocator allocator = config.getAllocator();
+
+            /**
+             * {@link DefaultChannelConfig} 中设置的 {@link RecvByteBufAllocator}，默认值为 {@link AdaptiveRecvByteBufAllocator}，
+             * 即可以动态调整需要分配的 Buffer 大小
+             */
             final RecvByteBufAllocator.Handle allocHandle = recvBufAllocHandle();
             allocHandle.reset(config);
 
@@ -147,6 +146,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             boolean close = false;
             try {
                 do {
+                    // 尽可能分配合适的大小：guess
                     byteBuf = allocHandle.allocate(allocator);
                     allocHandle.lastBytesRead(doReadBytes(byteBuf));
                     if (allocHandle.lastBytesRead() <= 0) {
@@ -163,11 +163,19 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
                     allocHandle.incMessagesRead(1);
                     readPending = false;
+
+                    /**
+                     * 相当于一次读数据完成（一次读事件处理可能会包含多次读数据操作，最多 16 次），并把这一次读取到的数据传递出去，即在 pipeline
+                     * 处理链上进行流转
+                     */
                     pipeline.fireChannelRead(byteBuf);
                     byteBuf = null;
                 } while (allocHandle.continueReading());
 
+                // 记录这次读事件总共读了多少数据，计算下次分配大小
                 allocHandle.readComplete();
+
+                // 相当于完成本次读事件的处理
                 pipeline.fireChannelReadComplete();
 
                 if (close) {

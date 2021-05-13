@@ -123,8 +123,19 @@ public class AdaptiveRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufA
             return nextReceiveBufferSize;
         }
 
+        /**
+         * Netty 根据接收到的数据，动态调整下个需要分配的 Buffer 大小
+         *
+         * @param actualReadBytes
+         */
         private void record(int actualReadBytes) {
+            /**
+             * 尝试是否可以减小分配的空间仍然能满足需求。
+             *
+             * 尝试方法：当前实际读取的 size 是否小于或等于打算缩小的尺寸
+             */
             if (actualReadBytes <= SIZE_TABLE[max(0, index - INDEX_DECREMENT)]) {
+                // decreaseNow：连续 2 次尝试减小都可以时，减小分配内存的大小
                 if (decreaseNow) {
                     index = max(index - INDEX_DECREMENT, minIndex);
                     nextReceiveBufferSize = SIZE_TABLE[index];
@@ -132,7 +143,9 @@ public class AdaptiveRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufA
                 } else {
                     decreaseNow = true;
                 }
-            } else if (actualReadBytes >= nextReceiveBufferSize) {
+            }
+            // 判断是否实际读取的数据大于等于预估的，如果大于则尝试扩容
+            else if (actualReadBytes >= nextReceiveBufferSize) {
                 index = min(index + INDEX_INCREMENT, maxIndex);
                 nextReceiveBufferSize = SIZE_TABLE[index];
                 decreaseNow = false;

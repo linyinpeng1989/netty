@@ -555,6 +555,8 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
 
     /**
      * Cumulate {@link ByteBuf}s.
+     *
+     * Netty 中的数据积累器，用于保存收到的数据
      */
     public interface Cumulator {
         /**

@@ -434,7 +434,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         int selectCnt = 0;
 
         /**
-         * Reactor 线程模型
+         * 死循环，即 Selector 轮询是否有事件就绪
          */
         for (;;) {
             try {
@@ -648,6 +648,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    /**
+     * 循环处理 Selector 轮询的就绪事件
+     */
     private void processSelectedKeysOptimized() {
         for (int i = 0; i < selectedKeys.size; ++i) {
             final SelectionKey k = selectedKeys.keys[i];
@@ -676,6 +679,11 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    /**
+     * 处理 Selector 轮询
+     * @param k
+     * @param ch
+     */
     private void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
         final AbstractNioChannel.NioUnsafe unsafe = ch.unsafe();
         if (!k.isValid()) {
@@ -714,6 +722,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             }
 
             // Process OP_WRITE first as we may be able to write some queued buffers and so free memory.
+            // 处理写操作
             if ((readyOps & SelectionKey.OP_WRITE) != 0) {
                 // Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to write
                 ch.unsafe().forceFlush();
@@ -721,6 +730,12 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
             // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
             // to a spin loop
+            /**
+             * 处理读请求（断开连接）或接入连接
+             *
+             * SelectionKey.OP_ACCEPT 对应处理类：{@link AbstractNioMessageChannel}
+             * SelectionKey.OP_READ 对应处理类：{@link AbstractNioByteChannel#read()}
+             */
             if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
                 unsafe.read();
             }

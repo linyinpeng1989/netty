@@ -93,8 +93,10 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
      */
     public NioServerSocketChannel(ServerSocketChannel channel) {
         /**
-         * 创建 {@link NioServerSocketChannel} 实例并设置相关属性，如
-         * {@link ServerSocketChannel}、非阻塞模式、
+         * 创建 {@link NioServerSocketChannel} 实例并设置相关属性，如：
+         *
+         * {@link ServerSocketChannel}、
+         * 非阻塞模式、
          * {@link io.netty.channel.Channel.Unsafe}、
          * {@link io.netty.channel.ChannelId}、
          * {@link io.netty.channel.DefaultChannelPipeline}

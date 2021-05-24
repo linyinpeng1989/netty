@@ -166,7 +166,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
                     /**
                      * 相当于一次读数据完成（一次读事件处理可能会包含多次读数据操作，最多 16 次），并把这一次读取到的数据传递出去，即在 pipeline
-                     * 处理链上进行流转
+                     * 处理链上进行流转，也就是开始业务逻辑处理
                      */
                     pipeline.fireChannelRead(byteBuf);
                     byteBuf = null;

@@ -113,6 +113,8 @@ public final class ChannelOutboundBuffer {
      */
     public void addMessage(Object msg, int size, ChannelPromise promise) {
         Entry entry = Entry.newInstance(msg, size, total(msg), promise);
+
+        // 追加到队尾
         if (tailEntry == null) {
             flushedEntry = null;
         } else {
@@ -126,6 +128,7 @@ public final class ChannelOutboundBuffer {
 
         // increment pending bytes after adding message to the unflushed arrays.
         // See https://github.com/netty/netty/issues/1619
+        // 计算待发送消息总量，并判断是否达到高水位限制，若达到高水位限制，设置不可写状态
         incrementPendingOutboundBytes(entry.pendingSize, false);
     }
 
@@ -172,7 +175,10 @@ public final class ChannelOutboundBuffer {
             return;
         }
 
+        // 计算写入大小为 size 的数据后，buffer 的大小
         long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, size);
+
+        // 判断待发送数据的 size 是否高于高水位线，若超过高水位线，则更新状态为不可写
         if (newWriteBufferSize > channel.config().getWriteBufferHighWaterMark()) {
             setUnwritable(invokeLater);
         }
@@ -350,7 +356,8 @@ public final class ChannelOutboundBuffer {
                     writtenBytes -= readableBytes;
                 }
                 remove();
-            } else { // readableBytes > writtenBytes
+            } else {
+                // readableBytes > writtenBytes 没有写完标记进度
                 if (writtenBytes != 0) {
                     buf.readerIndex(readerIndex + (int) writtenBytes);
                     progress(writtenBytes);

@@ -1375,6 +1375,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void read(ChannelHandlerContext ctx) {
+            // 实际上就是注册 OP_ACCEPT/OP_READ 事件：创建连接或者读事件
             unsafe.beginRead();
         }
 
@@ -1415,7 +1416,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             ctx.fireChannelActive();
-
+            // 注册读事件，读事件包括：创建连接、读数据
             readIfIsAutoRead();
         }
 

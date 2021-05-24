@@ -271,13 +271,14 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
-        // 初始化 Channel 对象及预设参数，并注册到 Selector 中
+        // 初始化 Channel 对象及预设参数，并注册到 Selector 中（异步操作）
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
             return regFuture;
         }
 
+        // 不能肯定 register 是否完成，因为 register 是丢到 NioEventLoop 里面执行去了
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
@@ -287,6 +288,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         } else {
             // Registration future is almost always fulfilled already, but just in case it's not.
             final PendingRegistrationPromise promise = new PendingRegistrationPromise(channel);
+
+            // 注册监听，等待 register 完成后回调执行 bind
             regFuture.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
@@ -316,7 +319,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         Channel channel = null;
         try {
             /**
-             * 创建相关 Channel 对象，channelFactory 实例由 {@link ServerBootstrap#channel(Class)}
+             * 通过 （泛型 + 反射 + 工厂） 创建相关 Channel 对象，channelFactory 实例由 {@link ServerBootstrap#channel(Class)}
              * 或 {@link Bootstrap#channel(Class)}方法中创建并赋值
              *
              * @see io.netty.channel.socket.nio.NioServerSocketChannel
@@ -324,7 +327,10 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
              * @see ReflectiveChannelFactory
              */
             channel = channelFactory.newChannel();
-            // init() 初始化预设参数
+
+            /**
+             * 初始化上一步骤创建的 Channel 实例
+             */
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {

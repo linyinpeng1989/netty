@@ -38,6 +38,9 @@ public abstract class InternalLoggerFactory {
     private static volatile InternalLoggerFactory defaultFactory;
 
     @SuppressWarnings("UnusedCatchParameter")
+    /**
+     * 依次创建日志框架对应的工厂类，直到创建成功为止。
+     */
     private static InternalLoggerFactory newDefaultFactory(String name) {
         InternalLoggerFactory f = useSlf4JLoggerFactory(name);
         if (f != null) {

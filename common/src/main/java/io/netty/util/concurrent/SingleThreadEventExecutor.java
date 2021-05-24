@@ -827,17 +827,17 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     private void execute(Runnable task, boolean immediate) {
-        /**
-         * 判断线程是否 Netty 自己创建（将当前线程与 NioEventLoop 中持有的线程是否一致）
-         *
-         * 若当前线程就是 Netty 自己创建的线程，则将 task 添加到任务队列中，由 bossGroup 线程池进行调度执行。
-         *
-         * bossGroup 线程池中实际执行任务的线程，即 {@link NioEventLoop} 线程，具体逻辑参见 {@link NioEventLoop#run()}
-         */
+        // 判断当前线程是否为 NioEventLoop 对应的线程
         boolean inEventLoop = inEventLoop();
+
+        /**
+         * 将 task 添加到 NioEventLoop 的任务队列中，由线程池进行任务调度。
+         *
+         * PS：NioEventLoop 是 {@link SingleThreadEventExecutor} 的子类，具体逻辑参见 {@link NioEventLoop#run()}
+         */
         addTask(task);
 
-        // 如果不是 Netty 自己创建的线程时
+        // 如果不是 NioEventLoop 对应的线程，启动线程
         if (!inEventLoop) {
             startThread();
             if (isShutdown()) {

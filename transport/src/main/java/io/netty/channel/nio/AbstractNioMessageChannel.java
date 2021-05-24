@@ -98,11 +98,15 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                 int size = readBuf.size();
                 for (int i = 0; i < size; i ++) {
                     readPending = false;
-                    // 触发 NioSocketChannel 的读取事件
+                    /**
+                     * 相当于一次读数据完成，并把这一次读取到的数据传递出去，即在 pipeline 处理链上进行流转
+                     */
                     pipeline.fireChannelRead(readBuf.get(i));
                 }
                 readBuf.clear();
                 allocHandle.readComplete();
+
+                // 相当于完成本次读事件的处理
                 pipeline.fireChannelReadComplete();
 
                 if (exception != null) {

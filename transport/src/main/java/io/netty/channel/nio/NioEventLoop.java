@@ -16,6 +16,8 @@
 package io.netty.channel.nio;
 
 import io.netty.channel.*;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.IntSupplier;
 import io.netty.util.concurrent.RejectedExecutionHandler;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
@@ -475,6 +477,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     continue;
                 }
 
+                /**
+                 * processSelectedKeys() 方法处理已经就绪的事件
+                 */
+
                 selectCnt++;
                 cancelledKeys = 0;
                 needsToSelectAgain = false;
@@ -658,8 +664,16 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             // See https://github.com/netty/netty/issues/2363
             selectedKeys.keys[i] = null;
 
+            /**
+             * 呼应于 channel 的 register 中的 this，即 {@link NioServerSocketChannel} 或 {@link NioSocketChannel}
+             *
+             * {@link AbstractNioChannel#doRegister()}
+             */
             final Object a = k.attachment();
 
+            /**
+             * processSelectedKey 用于处理某个就绪的事件
+             */
             if (a instanceof AbstractNioChannel) {
                 processSelectedKey(k, (AbstractNioChannel) a);
             } else {

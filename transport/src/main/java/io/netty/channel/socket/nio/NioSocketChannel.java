@@ -368,11 +368,14 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
         // By default we track the SO_SNDBUF when ever it is explicitly set. However some OSes may dynamically change
         // SO_SNDBUF (and other characteristics that determine how much data can be written at once) so we should try
         // make a best effort to adjust as OS behavior changes.
+        // 一次写完了，所以扩大一次写入的数据量
         if (attempted == written) {
             if (attempted << 1 > oldMaxBytesPerGatheringWrite) {
                 ((NioSocketChannelConfig) config).setMaxBytesPerGatheringWrite(attempted << 1);
             }
-        } else if (attempted > MAX_BYTES_PER_GATHERING_WRITE_ATTEMPTED_LOW_THRESHOLD && written < attempted >>> 1) {
+        }
+        // 一次写不完，所以缩小尝试写入的量
+        else if (attempted > MAX_BYTES_PER_GATHERING_WRITE_ATTEMPTED_LOW_THRESHOLD && written < attempted >>> 1) {
             ((NioSocketChannelConfig) config).setMaxBytesPerGatheringWrite(attempted >>> 1);
         }
     }
@@ -380,8 +383,10 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
     @Override
     protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         SocketChannel ch = javaChannel();
+        // 有数据要写且能写入，则最多尝试 16 次
         int writeSpinCount = config().getWriteSpinCount();
         do {
+            // 判断数据是否已经写完
             if (in.isEmpty()) {
                 // All written so clear OP_WRITE
                 clearOpWrite();
@@ -390,7 +395,10 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
             }
 
             // Ensure the pending writes are made of ByteBufs only.
+            // 尽量多写一些数据，可以动态调整大小
             int maxBytesPerGatheringWrite = ((NioSocketChannelConfig) config).getMaxBytesPerGatheringWrite();
+
+            // 最多返回 1024 个数据，总的 size 尽量不超过 maxBytesPerGatheringWrite
             ByteBuffer[] nioBuffers = in.nioBuffers(1024, maxBytesPerGatheringWrite);
             int nioBufferCnt = in.nioBufferCount();
 
@@ -412,7 +420,11 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
                         incompleteWrite(true);
                         return;
                     }
+
+                    // 动态调整每次写入的数据量大小
                     adjustMaxBytesPerGatheringWrite(attemptedBytes, localWrittenBytes, maxBytesPerGatheringWrite);
+
+                    // 从 ChannelOutBoundBuffer 中移除已经写出的数据
                     in.removeBytes(localWrittenBytes);
                     --writeSpinCount;
                     break;
@@ -437,6 +449,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
             }
         } while (writeSpinCount > 0);
 
+        // 写了 16 次数据，还是没有写完，直接 schedule 一个新的 flush task 出来，而不是注册写事件
         incompleteWrite(writeSpinCount < 0);
     }
 

@@ -19,7 +19,6 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.nio.AbstractNioByteChannel;
 import io.netty.channel.nio.AbstractNioChannel;
 import io.netty.channel.nio.AbstractNioMessageChannel;
-import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.channel.socket.ChannelOutputShutdownException;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -319,6 +318,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
     @Override
     public Channel read() {
+        // 执行 DefaultChannelPipeline.read 方法
         pipeline.read();
         return this;
     }
@@ -460,6 +460,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
      */
     protected abstract class AbstractUnsafe implements Unsafe {
 
+        /**
+         * 输出数据的缓冲区
+         */
         private volatile ChannelOutboundBuffer outboundBuffer = new ChannelOutboundBuffer(AbstractChannel.this);
         private RecvByteBufAllocator.Handle recvHandle;
         private boolean inFlush0;
@@ -510,14 +513,13 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             // 都有且仅有一个 EventLoop 与之关联）
             AbstractChannel.this.eventLoop = eventLoop;
 
-            // 判断当前线程是否与 EventLoop 对应的线程一致
+            // 判断当前线程是否是 NioEventLoop 对应的线程
             if (eventLoop.inEventLoop()) {
-                /**
-                 * 将 Channel 注册到 {@link NioEventLoop} 中对应的 Selector 中
-                 */
+                // 若当前线程就是 NioEventLoop 对应的线程，直接执行 register
                 register0(promise);
             } else {
                 try {
+                    // 将 register 封装成一个 task 丢到 NioEventLoop 中执行
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {
@@ -924,6 +926,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             assertEventLoop();
 
             ChannelOutboundBuffer outboundBuffer = this.outboundBuffer;
+            // 判断 channel 是否已经关闭
             if (outboundBuffer == null) {
                 try {
                     // release message now to prevent resource-leak
@@ -939,6 +942,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            // 计算输出数据的大小
             int size;
             try {
                 msg = filterOutboundMessage(msg);
@@ -955,6 +959,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            // 将数据添加到 outboundBuffer
             outboundBuffer.addMessage(msg, size, promise);
         }
 
@@ -963,11 +968,14 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             assertEventLoop();
 
             ChannelOutboundBuffer outboundBuffer = this.outboundBuffer;
+            // outboundBuffer == null 表示 channel 已经关闭了
             if (outboundBuffer == null) {
                 return;
             }
 
+            // 将 unflushedEntry 中的数据全部转化成 flushedEntry 中去
             outboundBuffer.addFlush();
+            // 进行 flush 操作，写出数据
             flush0();
         }
 
@@ -1004,6 +1012,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             try {
+                // 实际执行写操作
                 doWrite(outboundBuffer);
             } catch (Throwable t) {
                 handleWriteError(t);

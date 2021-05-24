@@ -713,6 +713,11 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         }
     }
 
+    /**
+     * 将数据写入到 Buffer 缓冲区
+     * @param msg
+     * @return
+     */
     @Override
     public ChannelFuture write(Object msg) {
         return write(msg, newPromise());
@@ -741,6 +746,11 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         }
     }
 
+    /**
+     * 将 Buffer 缓冲区的数据发送出去
+     *
+     * @return
+     */
     @Override
     public ChannelHandlerContext flush() {
         final AbstractChannelHandlerContext next = findContextOutbound(MASK_FLUSH);
@@ -804,12 +814,15 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
 
         final AbstractChannelHandlerContext next = findContextOutbound(flush ?
                 (MASK_WRITE | MASK_FLUSH) : MASK_WRITE);
+        // 引用计数用的，用来检测内存泄漏
         final Object m = pipeline.touch(msg, next);
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
             if (flush) {
+                // 将内存写入 Buffer 缓冲区并立即发送
                 next.invokeWriteAndFlush(m, promise);
             } else {
+                // 将数据写入 Buffer 缓冲区
                 next.invokeWrite(m, promise);
             }
         } else {

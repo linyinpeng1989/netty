@@ -57,6 +57,13 @@ public class ResourceLeakDetector<T> {
 
     /**
      * Represents the level of resource leak detection.
+     *
+     * 内存泄漏检测的级别（开关）
+     *
+     * DISABLED     不开启内存泄漏检测
+     * SIMPLE       开启内存泄漏检测，但不记录内存泄漏的位置（抽样）
+     * ADVANCED     开启内存泄漏检测，并且会记录内存泄漏的位置（抽样）
+     * PARANOID     开启内存泄漏检测，并且会记录内存泄漏的位置（全样本）
      */
     public enum Level {
         /**
@@ -248,11 +255,14 @@ public class ResourceLeakDetector<T> {
     @SuppressWarnings("unchecked")
     private DefaultResourceLeak track0(T obj) {
         Level level = ResourceLeakDetector.level;
+        // 未打开内存泄漏检测
         if (level == Level.DISABLED) {
             return null;
         }
 
+        // 打开内存泄漏检测，且级别小于 PARANOID
         if (level.ordinal() < Level.PARANOID.ordinal()) {
+            // 抽样检测
             if ((PlatformDependent.threadLocalRandom().nextInt(samplingInterval)) == 0) {
                 reportLeak();
                 return new DefaultResourceLeak(obj, refQueue, allLeaks);
@@ -284,12 +294,21 @@ public class ResourceLeakDetector<T> {
     }
 
     private void reportLeak() {
+        // 内存泄漏检测通过错误日志展示，若日志级别不为 error，则不执行内存泄漏检测
         if (!needReport()) {
             clearRefQueue();
             return;
         }
 
         // Detect and report previous leaks.
+        // 遍历 refQueue 并判断是否发生内存泄漏
+        //
+        // 原理：
+        //      ① 分配 ByteBuffer 时，会将引用计数 + 1，并定义一个弱引用 DefaultResourceLeak 加入到 Set（#allLeaks） 里
+        //      ② buffer.release() 时，引用计数 - 1，当引用计数减到 0 时， 自动执行释放资源操作，并将弱引用对象从 Set 中移除
+        //      ③ 通过判断弱引用对象在不在 Set 中，可以知道引用计数是否已经减到 0，没有减到 0 说明没有执行释放
+        //      ④ GC 发生时会回收弱引用对象，并将弱引用对象添加到 refQueue 中。因此，若 refQueue 中包含的对象（表示 GC 回收）也
+        //      存在于 Set 中（未减到 0），则表示发生内存泄漏
         for (;;) {
             DefaultResourceLeak ref = (DefaultResourceLeak) refQueue.poll();
             if (ref == null) {
